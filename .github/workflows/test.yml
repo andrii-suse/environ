@@ -1,0 +1,15 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test
+        run: t/01-lock.sh
+        env:
+          ENVIRON_TEST_IMAGE: opensuse/tumbleweed

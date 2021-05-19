@@ -1,0 +1,326 @@
+#!/bin/bash
+[ ! -e environ_env ] || source environ_env
+
+usage () {
+    cat <<'HELP_USAGE'
+Usage: environ [--rebuild 0] [--build 0] [--local 0] [--cachedir <0|path>] \
+               [--dir <path>] [--localdir] <product> [<path>]
+
+environ - generate a folder with helper scripts to manage and automate services
+  in test environments without privileged access.
+      The command prints the path to a folder with generated scripts. Further,
+  use 'start' / 'stop' / 'status' / 'print_address' / etc scripts in generated
+  folders to review what they do and to manage services.
+      For a full list of available commands refer to the content of generated
+  folders, (shell completion is useful there as well).
+
+  --rebuild 0 - do not overwrite existing templates, if any.
+  --build 0 - do not search and call 'build' script among the created
+      templates.
+  --local 0 - do not create a folder in the current directory, only a folder in
+      the cache directory will be created.
+  --cachedir 0 - do not create a folder in the cache directory, only a local
+      folder will be created.
+  --cachedir <path> - use <path> for cache directory location (default is
+      /temp/environ/)
+  --dir <path> - path to templates (default /etc/environ.d/).
+  --localdir <path> - additional path to templates (default t/lib/environ/).
+  <product> - a service for which scripts will be generated. Currently
+      supported values are names of folders in --tempatedir parameter (default
+      /etc/environ/product). <product> may be also followed by a digit if more
+      than one service is needed.
+  <path> - if specified, must point to a folder with source codes of the
+      desired product. In this case templates (when available) will actually
+      build the product from source, (unless --build option is set to 0).
+
+Notes:
+  * DON"T USE IT IN PRODUCTION. 'environ' is intended to be used for testing and
+  'proof of concept' purposes only. It intentionally makes services less
+  secure to ensure ease of use;
+  * 'environ' utility and generated scripts never use privileged access, so all
+  commands are safe for general system configuration (the services may occupy
+  certain ports though, this is the only side effect);
+  * to prevent conflicts between services generated in different location - the
+  utility uses cache directory (default /var/cache/environ/). It will try to
+  properly cleanup services;
+  * at the moment the templates do not cover installing actual services and
+  their dependencies (make sure all dependencies are installed for the
+  desired service);
+  * all content of generated folders will be deleted when the folder is
+  recreated (unless `--rebuild 0` parameter is provided);
+  * all configuration used and service' logs will usually remain inside the
+  generated folder;
+  * most of the templates use special directory 'dt' inside generated folders,
+  where files will be placed (e.g. actual data for database services or content
+  of WebServers with autoindex enabled, etc);
+  * it currently covers a limited set of products, but the concept must be
+  useful for testing in most of software projects;
+  * when reusing an existing folder, the utility will attempt to stop and
+  cleanup existing services. So corresponding diagnostic messages will be
+  printed in the console.
+
+Examples:
+  * Generate templates for managing local Apache web server, start it, add
+  files and list them with curl commands:
+
+       environ ap1
+       ap1/start
+       ap1/status
+       echo mytest > ap1/dt/myfile
+       ap1/curl -I /myfile
+       # commands below should print 'mytest'
+       ap1/curl /myfile
+       curl -s $(ap1/print_address)/myfile
+
+  * Generate templates for a randomly chosen web server, start it, add files
+  and list them with curl command. The Web Server will be Apache or Nginx
+  (50/50):
+
+       if test $((RANDOM % 10 < 5)) -le 5; then ws=$(environ ap1); else ws=$(environ ng1); fi
+       $ws/start
+       echo mytest > $ws/dt/myfile
+       $ws/curl -I /myfile
+
+  * Generate templates for managing local postgres database, start it, create
+  database, create test table:
+
+       environ pg1
+       pg1/start
+       pg1/create_db mytest
+       pg1/sql_mytest 'create table t as select 1'
+       # now there are several ways to execute SQL commands:
+       pg1/sql_mytest 'select * from t'
+       pg1/sql -t -c 'select * from t' mytest
+       PGHOST=$(pwd)/pg1/dt psql -t -c 'select * from t' mytest
+
+   * Generate templates for managing local rsync server, configure rsync
+   module, start the service, add files and list them using rsync client
+   commands:
+
+       rs=$(environ rs)
+       $rs/configure_dir test1 $rs/dt/test1
+       mkdir -p $rs/dt/test1
+       $rs/start
+       touch $rs/dt/test1/test2
+       $rs/ls_test1 | grep test2
+       RSYNC_PASSWORD=$USER rsync --list-only rsync://$($rs/print_address)/test1/ | grep test2
+
+HELP_USAGE
+}
+
+[ ! -z "$USER" ] || export USER=$(whoami)
+
+set -euo pipefail
+: "${ENVIRON_DIR:=/etc/environ.d}"
+: "${ENVIRON_LOCAL_DIR:=t/lib/environ}"
+: "${ENVIRON_CACHE:=/tmp/environ}"
+: "${ENVIRON_REBUILD:=1}"
+: "${ENVIRON_BUILD:=1}"
+: "${ENVIRON_LOCAL:=1}"
+
+mkdir -p "${ENVIRON_CACHE}"
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    --rebuild)
+    if [[ "$2" == --* ]] || [ -z "$2" ]; then
+        ENVIRON_REBUILD=1
+    else
+        ENVIRON_REBUILD="$2"
+        shift # past value
+    fi
+    shift # past argument
+    ;;
+    --build)
+    if [[ "$2" == --* ]] || [ -z "$2" ]; then
+        ENVIRON_BUILD=1
+    else
+        ENVIRON_BUILD="$2"
+        shift # past value
+    fi
+    shift # past argument
+    ;;
+    --local)
+    if [[ "$2" == --* ]] || [ -z "$2" ]; then
+        ENVIRON_LOCAL=1
+    else
+        ENVIRON_LOCAL="$2"
+        shift # past value
+    fi
+    shift # past argument
+    ;;
+    --cachedir)
+    if [[ "$2" == --* ]] || [ -z "$2" ]; then
+        ENVIRON_CACHE=1
+    else
+        ENVIRON_CACHE="$2"
+        shift # past value
+    fi
+    shift # past argument
+    ;;
+    --dir)
+    if [[ "$2" == --* ]] || [ -z "$2" ]; then
+        :
+    else
+        ENVIRON_DIR="$2"
+        shift # past value
+    fi
+    shift # past argument
+    ;;
+    --localdir)
+    if [[ "$2" == --* ]] || [ -z "$2" ]; then
+        :
+    else
+        ENVIRON_LOCAL_DIR="$2"
+        shift # past value
+    fi
+    shift # past argument
+    ;;
+    -?|-h|--help)
+    usage
+    exit 0
+    shift
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+
+test "$#" -ge 1 || (
+    usage
+    exit 1
+)
+
+[[ ! ${1} =~ ^- ]] || (
+    >&2 echo Unknown option $1
+    exit 1
+)
+
+env=${1}
+product=${env:0:2}
+[ "$product" != "$env" ] || env="${env}1"
+cache=${ENVIRON_CACHE}
+rebuild=${ENVIRON_REBUILD}
+local=${ENVIRON_LOCAL}
+template=${ENVIRON_DIR}
+template_local=${ENVIRON_LOCAL_DIR}
+
+cleanup_message=0
+# try to stop existing environ, if possible
+if [ -x "$cache/$env/stop" ]; then
+    >&2 echo "Cleaning leftovers from $env..."
+    cleanup_message=1
+    "$cache/$env/stop" 1>&2 || :
+fi
+
+# stop eventual subsystems
+for f in $cache/$env/*/stop; do
+    test -x $f || continue
+    test ! -L $(dirname "$f") || continue # don't try to cleanup symlinks
+    [ 1 == $cleanup_message ] || >&2 echo "Cleaning leftovers from $env..."
+    cleanup_message=1
+    $f 1>&2 || :
+done
+
+[ 0 == $cleanup_message ] || >&2 echo "Cleaning leftovers from $env...DONE"
+
+[ ! -d ./${env} ] || [ x${rebuild} == x1 ] || exit 0
+
+# remove environ folder in cachedir
+[ -z "$cache" ] || [ -z "$env" ] || [ ! -r "$cache/$env" ] || rm -rf "$cache/$env"
+[ -z "$cache" ] || [ -z "$env" ] || [ ! -L "$cache/$env" ] || rm "$cache/$env"
+# remove environ folder in current directory
+[ -z "$local" ] || [ "$local" == 0 ] || [ -z "$env" ] || [ ! -e "$env" ] || rm -rf "$env"
+
+type=local
+[ $# -le 1 ] || type=source
+
+[ -d "$template/$product/$type/" ] || [ -d $template_local/$product/$type ] ||  (
+    message="Cannot find '$type' templates for {$product} in {$template}"
+    [ -z $template_local ] || message="$message and {$template_local}"
+    >&2 echo $message
+    exit 1
+)
+
+if [ -z "$local" ]; then
+    mkdir $cache/$env
+    env="$cache/$env"
+else
+    mkdir ./${env}
+    ln -sf $(pwd)/$env $cache/$env
+fi
+
+generate_script="$template/$product/$type/generate"
+[ -x $generate_script ] || generate_script="$template_local/$product/$type/generate"
+
+if [ -x ${generate_script} ]; then
+    ( source ${generate_script} $* )
+else
+    workdir="$cache/$env"
+    [ -z "$local" ] || [ 0 == "$local" ] || workdir="$(pwd)/$env"
+    echo $workdir
+
+    # folder must be empty, so we don't overwrite anything
+    if find "$workdir/" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
+        ( >&2 echo "Folder {$cache/$env} is not empty, exiting"; exit 1; )
+    fi
+
+    wid=${env: -1}
+    port=0
+    [ ! -e $template/$product/port_base.cnf ] || {
+        port_base="$(cat $template/$product/port_base.cnf)"
+        port=$((wid * 10 + port_base))
+    }
+    [ ! -e $template_local/$product/port_base.cnf ] || {
+        port_base="$(cat $template_local/$product/port_base.cnf)"
+        port=$((wid * 10 + port_base))
+    }
+
+    for filename in {$template,$template_local}/{common,$product/$type}/* ; do
+        if [ -d $filename ] ; then
+            folder=$filename
+            mkdir -p $workdir/$(basename $folder)
+            for src in ${folder}/*.m4 ; do
+                [ -f "$src" ] || continue
+                dst=$workdir/$(basename $folder)/$(basename $src)
+                dst=${dst%.m4}
+                dst=${dst%.sh}
+                opts="-D__wid=$wid -D__workdir=$workdir/$(basename $folder) -D__datadir=$workdir/$(basename $folder)/dt -D__user=$USER -D__lockdir=$cache -D__environ=$env"
+                if [ $type == source ]; then
+                    opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
+                fi
+                m4 $opts $src > $dst
+                [[ $src != *.sh.m4 ]] || chmod +x "$dst"
+            done
+        else
+            opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env"
+            if [ $type == source ]; then
+                ln -sfn $2 $workdir/src
+                opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
+            fi
+            [ -f "$filename" ] || continue
+            [ m4 == ${filename//*.} ] || continue
+            dest=$workdir/$(basename $filename)
+            dest=${dest%.m4}
+            dest=${dest%.sh}
+            m4 $opts $filename > "$dest"
+            [[ $filename != *.sh.m4 ]] || chmod +x "$dest"
+        fi
+    done
+fi
+
+[ -z "$ENVIRON_BUILD" ] || [ 0 == "$ENVIRON_BUILD" ] || {
+    [ ! -x "${env}"/build ] || "${env}"/build >&2
+    for x in "${env}"/*/build; do
+        test -x $x || continue
+        $x >&2
+    done
+}
