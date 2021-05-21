@@ -35,6 +35,8 @@ else
     sslport=$((200+__port))
     sed "s, 127.0.0.1:\$port, --cacert "$cadir/ca.pem" https://127.0.0.1:$sslport,g" __workdir/curl > __workdir/curl_https
     chmod +x __workdir/curl_https
+    sed "s,127.0.0.1:__port,127.0.0.1:$sslport,g" __workdir/print_address > __workdir/print_address_https
+    chmod +x __workdir/print_address_https
     echo "<VirtualHost _default_:__port>
 Include __workdir/dir.conf
 </VirtualHost>

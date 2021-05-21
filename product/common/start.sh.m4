@@ -6,8 +6,13 @@ if [ -e __workdir/.pid ]; then
     rc=0
     kill -0 $oldpid >& /dev/null || rc=$?
     test "$rc" -gt 0 || (
-        >&2 echo 'Process {$oldpid} is already running - shut it down first'
-        exit 1
+        rc=0
+        # in docker killed process remains defunc, so we just ingore it
+        ps auxwww | grep $oldpid | grep defunc || rc=$?
+        [ $rc == 0 ] || {
+            >&2 echo "Process {$oldpid} is already running - shut it down first"
+            exit 1
+        }
     )
     >&2 echo "Removing leftover .pid file of process $oldpid"
     rm __workdir/.pid
@@ -30,11 +35,11 @@ i=0
 while kill -0 $pid 2>/dev/null ; do
     ! __workdir/status >& /dev/null || break
     [ $((i++ % 10)) != 0 ] || echo -n .
-    [ $i -ge 50 ] || {
+    [ $i -ge 100 ] || {
         sleep 0.1
         continue
     }
-    >&2 echo 'Timeout expired while waiting process {$pid} for to start'
+    >&2 echo "Timeout expired while waiting process {$pid} for to start"
     exit 1
 done
 

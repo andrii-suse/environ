@@ -4,7 +4,7 @@
 usage () {
     cat <<'HELP_USAGE'
 Usage: environ [--rebuild 0] [--build 0] [--local 0] [--cachedir <0|path>] \
-               [--dir <path>] [--localdir] <product> [<path>]
+               [--dir <path>] [-l|--localdir <path>] <product> [<path>]
 
 environ - generate a folder with helper scripts to manage and automate services
   in test environments without privileged access.

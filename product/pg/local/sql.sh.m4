@@ -8,7 +8,7 @@ elif [ -z "$2" ]; then
             PGHOST=__datadir psql "$@"
         fi
     else
-        db=${0/*_}
+        db=${0#*_}
         if [ "$#" == 0 ]; then
             PGHOST=__datadir psql $db
         else
