@@ -290,8 +290,8 @@ else
     }
     _exec_present=0
     # just check if _exec script present in iteration
-    for filename in {$template,$template_local}/{$product/$type}/_exec.m4 ; do
-        [ -f $filename ] || _exec_present=1
+    for filename in {$template,$template_local}/$product/$type/_exec.m4 ; do
+        [ ! -f $filename ] || _exec_present=1
     done
 
     for filename in {$template,$template_local}/{common,$product/$type}/* ; do
@@ -303,7 +303,7 @@ else
                 dst=$workdir/$(basename $folder)/$(basename $src)
                 dst=${dst%.m4}
                 dst=${dst%.sh}
-                opts="-D__wid=$wid -D__workdir=$workdir/$(basename $folder) -D__datadir=$workdir/$(basename $folder)/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env"
+                opts="-D__wid=$wid -D__workdir=$workdir/$(basename $folder) -D__datadir=$workdir/$(basename $folder)/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env -D__libdir=$folder"
                 if [ $type == source ]; then
                     opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
                 fi
@@ -311,15 +311,15 @@ else
                 [[ $src != *.sh.m4 ]] || chmod +x "$dst"
             done
         else
-            # we skip generating start/stop/status from common, unless _exec preset
-            [[ ! $filename =~ .*/common/(start|stop|status).sh.m4 ]] || [ "$_exec_present" == 1 ] || continue
-            opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env"
+            # we skip generating start/stop/status/_lock from common, unless _exec preset
+            [[ ! $filename =~ .*/common/(((start|stop|status).sh)|_lock).m4 ]] || [ "${_exec_present}" == 1 ] || continue
+            opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env -D__libdir=$(dirname $filename)"
             if [ $type == source ]; then
                 ln -sfn $srcdir $workdir/src
                 opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
             fi
             [ -f "$filename" ] || continue
-            [ m4 == ${filename//*.} ] || continue
+            [ m4 == ${filename//*.} ] || [ "$filename" == .service.lst ] || continue
             dest=$workdir/$(basename $filename)
             dest=${dest%.m4}
             dest=${dest%.sh}
@@ -336,10 +336,8 @@ else
         servicedir="$template/$product/$type"/.service
     fi
     if [ -n "$services" ]; then
+        start_stop=0
         # generate start / stop scripts by just calling the same operation for every service
-        echo 'set -e'   > $workdir/start
-        echo failures=0 > $workdir/status
-        echo failures=0 > $workdir/stop
         for service in $(cat "$services") ; do
             mkdir -p "$workdir/$service"
             for src in $servicedir/*.m4 ; do
@@ -354,17 +352,19 @@ else
                 m4 $opts -D__service=$service $src > $dst
                 [[ $src != *.sh.m4 ]] || chmod +x "$dst"
             done
-            [[ $service =~ worker ]] || {
+            [[ $service =~ worker ]] || [[ "$start_stop" == 1 ]] || [[ ! -e $workdir/$service/start.sh.m4 ]] || {
                 echo $workdir/$service/start >> $workdir/start
                 echo "$workdir/$service/status || : \$((failures++))" >> $workdir/status
                 echo "$workdir/$service/stop   || : \$((failures++))" >> $workdir/stop
             }
         done
-        echo '( exit $failures )' >> $workdir/status
-        echo '( exit $failures )' >> $workdir/stop
-        chmod +x $workdir/start
-        chmod +x $workdir/status
-        chmod +x $workdir/stop
+        if [ $start_stop == 1 ]; then
+            echo '( exit $failures )' >> $workdir/status
+            echo '( exit $failures )' >> $workdir/stop
+            chmod +x $workdir/start
+            chmod +x $workdir/status
+            chmod +x $workdir/stop
+        fi
     fi
 fi
 
