@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh apache2 curl openssl
 set -euo pipefail
 ap=$(environ ap)
 
@@ -24,4 +25,4 @@ $ap/stop
 $ap/status 2>/dev/null || rc=$?
 
 test $rc -gt 0
-echo PASS $0
+echo PASS $@

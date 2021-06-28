@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh apache2 curl
 set -euo pipefail
 ap1=$(environ ap1)
 ap2=$(environ ap2)
@@ -32,4 +33,4 @@ $ap2/stop
 $ap2/status 2>/dev/null || rc=$?
 
 test $rc -gt 0
-echo PASS $0
+echo PASS $@

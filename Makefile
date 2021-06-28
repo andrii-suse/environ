@@ -18,3 +18,5 @@ install:
 		done \
 	done
 
+test:
+	for f in product/*/t/*.sh ; do bash -x $f && continue; echo FAIL: $f; break; done

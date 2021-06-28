@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh rsync
 set -euo pipefail
 rs=$(environ rs)
 

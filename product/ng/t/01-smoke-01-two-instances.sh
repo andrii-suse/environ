@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh nginx curl
 set -euo pipefail
 ng1=$(environ ng1)
 ng2=$(environ ng2)

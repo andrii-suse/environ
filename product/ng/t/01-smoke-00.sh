@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh nginx curl
 set -euo pipefail
 ng=$(environ ng)
 

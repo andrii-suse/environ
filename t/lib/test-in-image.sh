@@ -15,13 +15,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-initscript=$1
-testcase=$2
+length=$(($#-1))
+packages=${@:1:$length}
 
-[ -n "$testcase" ] || {
-  testcase=$initscript
-  initscript=""
-}
+[ -z "$packages" ] || echo Additional packages: $packages
+
+testcase="${@: -1}"
 
 [ -n "$testcase" ] || {
   echo "No testcase provided"
@@ -58,6 +57,7 @@ docker_info="$(docker info >/dev/null 2>&1)" || {
 echo 'FROM '$ENVIRON_TEST_IMAGE'
 ADD environ_print_install.sh /
 RUN bash -x -c "$(/environ_print_install.sh || exit 1)"
+RUN [ -z "'$packages'" ] || bash -x -c "$(/environ_print_install.sh '$packages'  || exit 1)"
 WORKDIR /opt/environ
 ENTRYPOINT ["/usr/bin/tail", "-f", "/dev/null"]
 ' | docker build -t $ident.image -f - $thisdir
@@ -90,9 +90,6 @@ done
 docker exec "$containername" pwd >& /dev/null || (echo Cannot start container; exit 1 ) >&2
 
 docker exec "$containername" bash -c 'cd /opt/environ && make install'
-
-echo "$*"
-[ -z $initscript ] || echo "bash -xe /opt/environ/t/$initscript" | docker exec -i "$containername" bash -x
 
 set +ex
 docker exec -e TESTCASE="$testcase"  -i "$containername" bash -c "useradd $(id -nu) -u $(id -u) || :; chown $(id -nu) /opt/environ; sudo -u \#$(id -u) bash" < "$testcase"

@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh postgresql-server
 set -euo pipefail
 pg=$(environ pg)
 

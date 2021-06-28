@@ -1,3 +1,4 @@
+#!t/lib/test-in-image.sh
 set -euo pipefail
 fk=$(environ fk)
 
