@@ -12,13 +12,14 @@ jobs:
         product:
           - product/ap
           - product/fk
+          - product/md
           - product/ng
           - product/pg
           - product/rs
           - '.'
+        test_image:
+          - registry.opensuse.org/opensuse/leap
     steps:
       - uses: actions/checkout@v2
       - name: Test
-        run:  for f in ${{ matrix.product }}/t/*.sh ; do $f && continue; echo FAIL $f; exit 1; done
-        env:
-          ENVIRON_TEST_IMAGE: opensuse/tumbleweed
+        run:  for f in ${{ matrix.product }}/t/*.sh ; do {matrix.test_image} $f && continue; echo FAIL $f; exit 1; done
