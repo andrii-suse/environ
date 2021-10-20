@@ -45,7 +45,7 @@ thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 basename=$(basename "$testcase")
 basename=${basename,,}
 basename=${basename//:/_}
-ident=environ.envtest.${ENVIRON_TEST_IMAGE/\//_}
+ident=environ.envtest.${ENVIRON_TEST_IMAGE//\//_}
 
 containername="$ident.${basename,,}"
 
@@ -55,7 +55,9 @@ docker_info="$(docker info >/dev/null 2>&1)" || {
 }
 
 echo 'FROM '$ENVIRON_TEST_IMAGE'
-ADD environ_print_install.sh /
+RUN echo 01 # change this if you want rebuild of container
+RUN [ ! -d /etc/zypp ] || sed -i 's,http://,https://,g' /etc/zypp/repos.d/*.repo
+ADD environ_print_install* /
 RUN bash -x -c "$(/environ_print_install.sh || exit 1)"
 RUN [ -z "'$packages'" ] || bash -x -c "$(/environ_print_install.sh '$packages'  || exit 1)"
 WORKDIR /opt/environ
@@ -72,8 +74,9 @@ function cleanup {
     [ "$in_cleanup" != 1 ] || return
     in_cleanup=1
     if [ "$ret" != 0 ] && [ -n "$PAUSE_ON_FAILURE" ]; then
-        read -rsn1 -p"Test failed, press any key to finish";echo
+        read -rsn1 -p"Test failed, press any key to finish"; echo
     fi
+    docker stop -t0 "$containername"
     [ "$ret" == 0 ] || echo FAIL $basename
 }
 
@@ -92,6 +95,10 @@ docker exec "$containername" pwd >& /dev/null || (echo Cannot start container; e
 docker exec "$containername" bash -c 'cd /opt/environ && make install'
 
 set +ex
-docker exec -e TESTCASE="$testcase"  -i "$containername" bash -c "useradd $(id -nu) -u $(id -u) || :; chown $(id -nu) /opt/environ; sudo -u \#$(id -u) bash" < "$testcase"
+
+docker exec "$containername" bash -c '[ ! -f /usr/sbin/memcached ] || [ -f /usr/bin/memcached ] || ln -s /usr/sbin/memcached /usr/bin'
+docker exec "$containername" bash -c "useradd $(id -nu) -u $(id -u)"
+docker exec "$containername" bash -c "[ ! -f /usr/sbin/nginx ] || chown -R $(id -nu) /var/log/nginx"
+docker exec -e TESTCASE="$testcase"  -i "$containername" bash -c "sudo -u \#$(id -u) bash -x" < "$testcase"
 ret=$?
 ( exit $ret )
