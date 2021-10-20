@@ -12,6 +12,7 @@ jobs:
         product:
           - product/ap
           - product/fk
+          - product/md
           - product/ng
           - product/pg
           - product/rs
@@ -21,4 +22,4 @@ jobs:
       - name: Test
         run:  for f in ${{ matrix.product }}/t/*.sh ; do $f && continue; echo FAIL $f; exit 1; done
         env:
-          ENVIRON_TEST_IMAGE: opensuse/tumbleweed
+          ENVIRON_TEST_IMAGE: opensuse/leap
