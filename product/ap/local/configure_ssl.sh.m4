@@ -15,9 +15,9 @@ fi
 mkdir -p $ssldir
 
 [ -f $ssldir/server-cert.pem ] || {
-    openssl req -newkey rsa:2048 -nodes -keyout $ssldir/server-key.pem -out $ssldir/server-req.pem -subj "${subj}=ap`'__wid" --config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=IP:127.0.0.1")) -extensions v3_req -reqexts SAN
+    openssl req -newkey rsa:2048 -nodes -keyout $ssldir/server-key.pem -out $ssldir/server-req.pem -subj "${subj}=ap`'__wid" -extensions v3_req
     openssl rsa -in $ssldir/server-key.pem -out $ssldir/server-key.pem
-    openssl x509 -req -in $ssldir/server-req.pem -days 3600 -CA $cadir/ca.pem -CAkey $cadir/ca-key.pem -set_serial 01 -extfile <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=IP:127.0.0.1")) -extensions SAN -out "$ssldir/server-cert.pem"
+    openssl x509 -req -in $ssldir/server-req.pem -days 3600 -CA $cadir/ca.pem -CAkey $cadir/ca-key.pem -set_serial 01 -out "$ssldir/server-cert.pem"  -extfile <(printf "subjectAltName=IP:127.0.0.1")
 }
 
 # [ -f $ssldir/client-cert.pem ] || {
