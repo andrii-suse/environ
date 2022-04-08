@@ -12,6 +12,7 @@ jobs:
         product:
           - product/ap
           - product/fk
+          - product/ma
           - product/md
           - product/ng
           - product/pg
