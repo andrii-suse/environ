@@ -27,7 +27,7 @@ environ - generate a folder with helper scripts to manage and automate services
   --localdir <path> - additional path to templates (default t/lib/environ/).
   <product> - a service for which scripts will be generated. Currently
       supported values are names of folders in --tempatedir parameter (default
-      /etc/environ/product). <product> may be also followed by a digit if more
+      /etc/environ.d/product). <product> may be also followed by a digit if more
       than one service is needed.
   <path> - if specified, must point to a folder with source codes of the
       desired product. In this case templates (when available) will actually
@@ -112,8 +112,8 @@ HELP_USAGE
 
 set -euo pipefail
 : "${ENVIRON_DIR:=/etc/environ.d}"
-: "${ENVIRON_LOCAL_DIR:=t/lib/environ}"
-: "${ENVIRON_CACHE:=/tmp/environ}"
+: "${ENVIRON_LOCAL_DIR:=./environ.d}"
+: "${ENVIRON_CACHE:=/var/opt/environ}"
 : "${ENVIRON_REBUILD:=1}"
 : "${ENVIRON_BUILD:=1}"
 : "${ENVIRON_LOCAL:=1}"
@@ -212,7 +212,8 @@ rebuild=${ENVIRON_REBUILD}
 local=${ENVIRON_LOCAL}
 template=${ENVIRON_DIR}
 template_local=${ENVIRON_LOCAL_DIR}
-type=local
+type=''
+
 [ $# -le 1 ] || {
     type=source
     srcdir=$2
@@ -220,6 +221,17 @@ type=local
     # if t/lib/environ doest exist - use it from $srcdir
     [ ! -d "$srcdir"/t/lib/environ ] || [ -d t/lib/environ ] || template_local="$srcdir"/t/lib/environ
 }
+
+[ -z ${env:4} ] || {
+    [ ! -e $template_local/$product/detect_type.sh ] || \
+        type=$($template_local/$product/detect_type.sh ${1})
+
+    [ ! -z "$type" ] || [ ! -e $template/$product/detect_type.sh ] || \
+        type=$($template/$product/detect_type.sh ${1})
+}
+
+[ -n "$type" ] || \
+    type=local
 
 cleanup_message=0
 # try to stop existing environ, if possible
@@ -294,7 +306,7 @@ else
         [ ! -f $filename ] || _exec_present=1
     done
 
-    for filename in {$template,$template_local}/{common,$product/$type}/* ; do
+    for filename in {$template,$template_local}/{common,$product/common,$product/$type}/* ; do
         if [ -d $filename ] ; then
             folder=$filename
             mkdir -p $workdir/$(basename $folder)
@@ -303,21 +315,23 @@ else
                 dst=$workdir/$(basename $folder)/$(basename $src)
                 dst=${dst%.m4}
                 dst=${dst%.sh}
-                opts="-D__wid=$wid -D__workdir=$workdir/$(basename $folder) -D__datadir=$workdir/$(basename $folder)/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env -D__libdir=$folder"
+                opts="-D__wid=$wid -D__workdir=$workdir/$(basename $folder) -D__datadir=$workdir/$(basename $folder)/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__cachedir=$cache -D__environ=$env -D__libdir=$folder"
                 if [ $type == source ]; then
                     opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
                 fi
+                [ $type != version ] || opts="$opts -D__version=${1:4} -D__bindir=$cache/$product-version/${1:4}/bin"
                 m4 $opts $src > $dst
                 [[ $src != *.sh.m4 ]] || chmod +x "$dst"
             done
         else
             # we skip generating start/stop/status/_lock from common, unless _exec preset
             [[ ! $filename =~ .*/common/(((start|stop|status).sh)|_lock).m4 ]] || [ "${_exec_present}" == 1 ] || continue
-            opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env -D__libdir=$(dirname $filename)"
+            opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__cachedir=$cache -D__environ=$env -D__libdir=$(dirname $filename)"
             if [ $type == source ]; then
                 ln -sfn $srcdir $workdir/src
                 opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
             fi
+            [ $type != version ] || opts="$opts -D__version=${1:4} -D__bindir=$cache/$product-version/${1:4}/bin"
             [ -f "$filename" ] || continue
             [ m4 == ${filename//*.} ] || [ "$filename" == .service.lst ] || continue
             dest=$workdir/$(basename $filename)
@@ -345,10 +359,11 @@ else
                 dst=$workdir/${service}/$(basename $src)
                 dst=${dst%.m4}
                 dst=${dst%.sh}
-                opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__environ=$env"
+                opts="-D__wid=$wid -D__workdir=$workdir -D__datadir=$workdir/dt -D__port=$port -D__user=$USER -D__lockdir=$cache -D__cachedir=$cache -D__environ=$env"
                 if [ $type == source ]; then
                     opts="$opts -D__srcdir=$workdir/src -D__blddir=$workdir/bld -D__installdir=$workdir/install"
                 fi
+                [ $type != version ] || opts="$opts -D__version=${1:4} -D__bindir=$cache/$product-version/${1:4}/bin"
                 m4 $opts -D__service=$service $src > $dst
                 [[ $src != *.sh.m4 ]] || chmod +x "$dst"
             done

@@ -1,8 +1,3 @@
-#!/bin/bash
-[ ! -e environ_env ] || source environ_env
-
-usage () {
-    cat <<'HELP_USAGE'
 Usage: environ [--rebuild 0] [--build 0] [--local 0] [--cachedir <0|path>] \
                [--dir <path>] [-l|--localdir <path>] <product> [<path>]
 
@@ -24,11 +19,12 @@ environ - generate a folder with helper scripts to manage and automate services
   --cachedir <path> - use <path> for cache directory location (default is
       /temp/environ/)
   --dir <path> - path to templates (default /etc/environ.d/).
+  -l <path>,
   --localdir <path> - additional path to templates (default t/lib/environ/).
   <product> - a service for which scripts will be generated. Currently
-    supported values are names of folders in --tempatedir parameter (default
-    /etc/environ/product). <product> may be also followed by a digit if more
-    than one service is needed.
+      supported values are names of folders in --tempatedir parameter (default
+      /etc/environ.d/product). <product> may be also followed by a digit if more
+      than one service is needed.
   <path> - if specified, must point to a folder with source codes of the
       desired product. In this case templates (when available) will actually
       build the product from source, (unless --build option is set to 0).

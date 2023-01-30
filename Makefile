@@ -1,9 +1,11 @@
 
 install:
 	mkdir -p "${DESTDIR}"/usr/bin/
+	mkdir -p "${DESTDIR}"/var/opt/environ
+	chmod 777 "${DESTDIR}"/var/opt/environ
 	install bin/environ "${DESTDIR}"/usr/bin/
 	install -d -m 0755 "${DESTDIR}"/etc/environ.d/
-	cd product && for d in * ; do \
+	cd environ.d && for d in * ; do \
 		mkdir -p "${DESTDIR}"/etc/environ.d/$$d ;\
 		for f in $$d/*.{m4,cnf} ; do \
 			test -f $$f && install -m 0644 $$f "${DESTDIR}"/etc/environ.d/$$f ;\
@@ -19,10 +21,10 @@ install:
 	done
 
 test:
-	for f in product/*/t/*.sh ; do bash -x $f && continue; echo FAIL: $f; break; done
+	for f in environ.d/*/t/*.sh ; do bash -x $f && continue; echo FAIL: $f; break; done
 
 test_leap:
-	for f in product/ap/*/*.sh; do echo starting $f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/leap $f && continue; echo FAIL $f; break; done
+	for f in environ.d/ap/*/*.sh; do echo starting $f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/leap $f && continue; echo FAIL $f; break; done
 
 test_tw:
-	for f in product/ap/*/*.sh; do echo starting $f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/tumbleweed $f && continue; echo FAIL $f; break; done
+	for f in environ.d/ap/*/*.sh; do echo starting $f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/tumbleweed $f && continue; echo FAIL $f; break; done

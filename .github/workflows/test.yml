@@ -10,13 +10,13 @@ jobs:
     strategy:
       matrix:
         product:
-          - product/ap
-          - product/fk
-          - product/ma
-          - product/md
-          - product/ng
-          - product/pg
-          - product/rs
+          - environ.d/ap
+          - environ.d/fk
+          - environ.d/ma
+          - environ.d/md
+          - environ.d/ng
+          - environ.d/pg
+          - envrion.d/rs
           - '.'
     steps:
       - uses: actions/checkout@v2
