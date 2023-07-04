@@ -11,6 +11,10 @@ touch $rs/dt/file1.dat
 
 $rs/ls_test | grep file1.dat
 
+mkdir $rs/dt/subdir
+touch $rs/dt/subdir/file2.dat
+$rs/ls_test /subdir/ | grep file2.dat
+
 $rs/stop
 
 rc=0

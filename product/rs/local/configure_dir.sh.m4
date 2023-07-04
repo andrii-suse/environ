@@ -13,5 +13,5 @@ path = $dir
 auth users = $user
 secrets file = __workdir/$id.secrets" >> __workdir/rsyncd.conf
 
-echo "RSYNC_PASSWORD=$password rsync --list-only --port=$port 127.0.0.1::$id" > __workdir/ls_$id
+echo "RSYNC_PASSWORD=$password rsync --list-only --port=$port 127.0.0.1::$id\$1" > __workdir/ls_$id
 chmod +x __workdir/ls_$id
