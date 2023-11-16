@@ -7,17 +7,6 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        product:
-          - environ.d/ap
-          - environ.d/fk
-          - environ.d/ma
-          - environ.d/md
-          - environ.d/ng
-          - environ.d/pg
-          - envrion.d/rs
-          - '.'
     steps:
       - uses: actions/checkout@v2
       - name: Test
