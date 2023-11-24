@@ -1,1 +1,1 @@
-mysqladmin --socket=__workdir/.sock shutdown
+mariadb-admin --socket=__workdir/.sock shutdown
