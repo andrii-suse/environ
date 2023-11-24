@@ -1,1 +1,1 @@
-mysqladmin --socket=__workdir/.sock status
+mariadb-admin --socket=__workdir/.sock status

@@ -4,6 +4,11 @@ set -e
 
 /usr/sbin/mariadbd --datadir=__datadir --user=$USER --socket=__workdir/.sock --skip-networking --log-error=__workdir/.cerr --pid-file=__workdir/.pid "$@" &
 
-sleep 1
-__workdir/status >& /dev/null || sleep 1
+sleep 0.1
+__workdir/status >& /dev/null || sleep 0.1
+__workdir/status >& /dev/null || sleep 0.1
+__workdir/status >& /dev/null || sleep 0.1
+__workdir/status >& /dev/null || sleep 0.1
+__workdir/status >& /dev/null || sleep 0.1
+__workdir/status >& /dev/null || sleep 0.1
 __workdir/status >& /dev/null || sleep 1
