@@ -56,7 +56,6 @@ docker_info="$(docker info >/dev/null 2>&1)" || {
 
 echo 'FROM '$ENVIRON_TEST_IMAGE'
 RUN echo 01 # change this if you want rebuild of container
-RUN [ ! -d /etc/zypp ] || sed -i 's,http://,https://,g' /etc/zypp/repos.d/*.repo
 ADD environ_print_install* /
 RUN bash -x -c "$(/environ_print_install.sh || exit 1)"
 RUN [ -z "'$packages'" ] || bash -x -c "$(/environ_print_install.sh '$packages'  || exit 1)"
