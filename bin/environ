@@ -22,13 +22,13 @@ environ - generate a folder with helper scripts to manage and automate services
       folder will be created.
   --cachedir <path> - use <path> for cache directory location (default is
       /temp/environ/)
-  --dir <path> - path to templates (default /etc/environ.d/).
+  --dir <path> - path to templates (default /usr/share/environ.d/).
   -l <path>,
   --localdir <path> - additional path to templates (default t/lib/environ/).
   <product> - a service for which scripts will be generated. Currently
       supported values are names of folders in --tempatedir parameter (default
-      /etc/environ/product). <product> may be also followed by a digit if more
-      than one service is needed.
+      /usr/share/environ.d/product). <product> may be also followed by a digit if 
+      more than one service is needed.
   <path> - if specified, must point to a folder with source codes of the
       desired product. In this case templates (when available) will actually
       build the product from source, (unless --build option is set to 0).
@@ -111,7 +111,7 @@ HELP_USAGE
 [ ! -z "$USER" ] || export USER=$(whoami)
 
 set -euo pipefail
-: "${ENVIRON_DIR:=/etc/environ.d}"
+: "${ENVIRON_DIR:=/usr/share/environ.d}"
 : "${ENVIRON_LOCAL_DIR:=t/lib/environ}"
 : "${ENVIRON_CACHE:=/tmp/environ}"
 : "${ENVIRON_REBUILD:=1}"
