@@ -1,0 +1,27 @@
+* Install from source:
+
+sudo make install
+
+* Install rpm (the only dependency are bash and m4):
+
+wget -r --no-directories -l1 -np https://download.opensuse.org/repositories/home:/andriinikitin:/environ/rpm/noarch/ -A "environ-*.noarch.rpm"
+rpm -i environ*.rpm
+
+* Install deb (the only dependency are bash and m4):
+
+wget -r --no-directories -l1 -np https://download.opensuse.org/repositories/home:/andriinikitin:/environ/deb/amd64/ -A "environ_*.deb"
+dpkg -i environ*.deb
+
+* Add repository on openSUSE:
+
+zypper ar -f http://download.opensuse.org/repositories/home:andriinikitin/rpm environ
+zypper --gpg-auto-import-keys ref environ
+zypper install environ
+
+* Add repository on Debian/Ubuntu:
+
+echo 'deb http://download.opensuse.org/repositories/home:andriinikitin:environ/deb/ /' > /etc/apt/sources.list.d/environ.list
+curl -fsSL http://download.opensuse.org/repositories/home:andriinikitin:environ/deb/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/environ.gpg
+apt update
+apt install environ
+
