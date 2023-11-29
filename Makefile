@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 
 install:
 	mkdir -p "${DESTDIR}"/usr/bin/
