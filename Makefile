@@ -19,10 +19,10 @@ install:
 	done
 
 test:
-	for f in product/*/t/*.sh ; do bash -x $f && continue; echo FAIL: $f; break; done
+	for f in product/*/t/*.sh ; do bash -x $$f && continue; echo FAIL: $$f; break; done
 
 test_leap:
-	for f in product/ap/*/*.sh; do echo starting $f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/leap $f && continue; echo FAIL $f; break; done
+	for f in product/ap/*/*.sh; do echo starting $$f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/leap $$f && continue; echo FAIL $$f; break; done
 
 test_tw:
-	for f in product/ap/*/*.sh; do echo starting $f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/tumbleweed $f && continue; echo FAIL $f; break; done
+	for f in product/ap/*/*.sh; do echo starting $$f; ENVIRON_TEST_IMAGE=registry.opensuse.org/opensuse/tumbleweed $$f && continue; echo FAIL $$f; break; done
