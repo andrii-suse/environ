@@ -4,7 +4,7 @@ set -e
 
 eatmydata=$(which eatmydata 2>/dev/null) || :
 
-$eatmydata /usr/sbin/mariadbd --datadir=__datadir --user=$USER --socket=__workdir/.sock --skip-networking --log-error=__workdir/.cerr --pid-file=__workdir/.pid "$@" &
+$eatmydata /usr/sbin/mariadbd --datadir=__datadir --user=$USER --socket=__workdir/.sock --skip-networking --disable-ssl --log-error=__workdir/.cerr --pid-file=__workdir/.pid "$@" &
 
 sleep 0.1
 
