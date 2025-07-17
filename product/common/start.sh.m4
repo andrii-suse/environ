@@ -21,6 +21,13 @@ fi
 [ ! -e __workdir/_lock ] || source __workdir/_lock
 pid=$(source __workdir/_exec)
 
+if test "${pid:-0}" -eq "${pid:-1}" 2>/dev/null; then :
+else
+    test -f __workdir/.pid || sleep 0.01
+    test -f __workdir/.pid || sleep 0.02
+    test -f __workdir/.pid || sleep 0.1
+fi
+
 if [ -e __workdir/.pid ]; then
     pid=$(cat __workdir/.pid)
 elif [ -n $pid ] && [ "$pid" -eq "$pid" ] 2>/dev/null; then # if number

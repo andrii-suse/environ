@@ -8,7 +8,7 @@ $ma/status
 $ma/create_db tst
 $ma/sql_tst "create table t1 as select 'x1'"
 
-test x1 == $($ma/sql --batch -Ne "select * from t1" tst)
+test x1 == $($ma/sql --batch --ssl-verify-server-cert=0 -Ne "select * from t1" tst)
 test x1 == $($ma/sql_tst "select * from t1")
 test x1 == $($ma/sql "select * from t1")
 
