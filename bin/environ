@@ -294,7 +294,7 @@ else
         [ ! -f $filename ] || _exec_present=1
     done
 
-    for filename in {$template,$template_local}/{common,$product/$type}/* ; do
+    for filename in {$template,$template_local}/{common,$product/common,$product/$type}/* ; do
         if [ -d $filename ] ; then
             folder=$filename
             mkdir -p $workdir/$(basename $folder)
@@ -372,6 +372,6 @@ fi
     [ ! -x "${env}"/build ] || "${env}"/build >&2
     for x in "${env}"/*/build; do
         test -x $x || continue
-        $x >&2
+	test -d $x || $x >&2
     done
 }
