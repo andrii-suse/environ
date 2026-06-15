@@ -4,7 +4,7 @@ set -e
 
 eatmydata=$(which eatmydata 2>/dev/null) || :
 
-$eatmydata /usr/sbin/mariadbd --datadir=__datadir --user=$USER --socket=__workdir/.sock --skip-networking --disable-ssl --log-error=__workdir/.cerr --pid-file=__workdir/.pid ${eatmydata:+--innodb-use-native-aio=0} "$@" &
+$eatmydata /usr/sbin/mariadbd --datadir=__datadir --secure-file-priv=__workdir/.. --user=$USER --socket=__workdir/.sock --skip-networking --disable-ssl --log-error=__workdir/.cerr --pid-file=__workdir/.pid ${eatmydata:+--innodb-use-native-aio=0} "$@" &
 
 sleep 0.1
 
