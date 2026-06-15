@@ -3,4 +3,4 @@ set -e
 
 eatmydata=$(which eatmydata 2>/dev/null) || :
 
-$eatmydata mariadb-install-db --no-defaults --data=__datadir --log-error=__workdir/.install | head -n 10
+$eatmydata mariadb-install-db --no-defaults --data=__datadir --log-error=__workdir/.install ${eatmydata:+--innodb-use-native-aio=0} | head -n 10
